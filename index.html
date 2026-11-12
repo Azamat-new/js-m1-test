@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Контрольная М1 · Тест</title>
+<style>
+:root{--bg:#f5f3ef;--paper:#fff;--ink:#1d1d1b;--muted:#77736b;--line:#e2ded6;--accent:#c8553d;--ok:#2f7d4f;--bad:#b3261e;--code:#1d1d1b;--code-ink:#ece8e1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 120px}
+header{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:26px}
+header .k{font:600 12px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+header h1{margin:8px 0 0;font-size:30px;letter-spacing:-.01em}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin-bottom:16px}
+label.f{display:block;font-size:14px;color:var(--muted);margin:0 0 6px}
+input[type=text]{width:100%;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+.vars{display:flex;gap:12px;margin-top:6px}
+.vars label{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;text-align:center;font-weight:600}
+.vars input{display:none}
+.vars label:has(input:checked){border-color:var(--accent);color:var(--accent)}
+button.go{font:600 17px/1 inherit;font-family:inherit;background:var(--ink);color:#fff;border:0;border-radius:8px;padding:14px 24px;cursor:pointer}
+button.go:disabled{opacity:.4;cursor:default}
+.rules{color:var(--muted);font-size:15px;margin:16px 0 0;padding-left:20px}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);margin-bottom:18px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:15px}
+.bar .t{font-size:22px;font-weight:700}
+.bar .t.low{color:var(--bad)}
+.q .n{font:600 13px/1 "JetBrains Mono",ui-monospace,monospace;color:var(--accent);letter-spacing:.1em}
+.q .tx{font-weight:600;margin:8px 0 12px}
+.q pre{background:var(--code);color:var(--code-ink);border-radius:6px;padding:14px 16px;font:15px/1.5 "JetBrains Mono",ui-monospace,monospace;overflow:auto;margin:0 0 14px}
+.q .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.q .opts label{display:flex;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:15px}
+.q .opts label:has(input:checked){border-color:var(--accent);background:#fbf1ee}
+.q .opts input{accent-color:var(--accent)}
+.res{text-align:center;padding:40px 24px}
+.res .sc{font-size:96px;font-weight:700;line-height:1;margin:16px 0 6px}
+.res .sc small{font-size:36px;color:var(--muted)}
+.res table{margin:24px auto 0;border-collapse:collapse;font-size:16px;text-align:left}
+.res td{padding:6px 14px;border-bottom:1px solid var(--line)}
+.res td:first-child{color:var(--muted)}
+.warn{color:var(--bad);font-weight:600}
+.hide{display:none}
+@media (max-width:600px){.wrap{padding:16px 12px 100px}.card{padding:16px 14px}header h1{font-size:24px}.q .opts{grid-template-columns:1fr}.q pre{font-size:13.5px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}.q .opts label{padding:12px;font-size:15px}.bar{font-size:13px}.bar .t{font-size:20px}.res .sc{font-size:72px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="k" data-t="kicker"></div><h1 data-t="title"></h1></header>
+
+  <section id="start" class="card">
+    <label class="f" for="nm" data-t="name"></label>
+    <input type="text" id="nm" autocomplete="off">
+    <label class="f" style="margin-top:16px" data-t="variant"></label>
+    <div class="vars">
+      <label><input type="radio" name="v" value="A"><span data-t="varA"></span></label>
+      <label><input type="radio" name="v" value="B"><span data-t="varB"></span></label>
+    </div>
+    <ul class="rules" id="rules"></ul>
+    <div style="margin-top:20px"><button class="go" id="begin" disabled data-t="begin"></button></div>
+  </section>
+
+  <section id="test" class="hide">
+    <div class="bar"><span id="who"></span><span id="prog"></span><span class="t" id="timer">30:00</span></div>
+    <div id="qs"></div>
+    <div style="margin-top:20px"><button class="go" id="finish" data-t="finish"></button></div>
+  </section>
+
+  <section id="result" class="card res hide"></section>
+</div>
+
+<script>
+const LANG = document.documentElement.lang.startsWith('ky') ? 'ky' : 'ru';
+const MINUTES = 30;
+const T = {
+  ru: {kicker:'Контрольная модуля 1 · 12.11.2026', title:'Тест по JavaScript', name:'Фамилия и имя', variant:'Вариант (скажет преподаватель)', varA:'Вариант A', varB:'Вариант B',
+       begin:'Начать тест', finish:'Завершить и узнать результат', of:'отвечено', ask:'Вопрос', out:'Что выведет код?',
+       rules:['20 вопросов, 30 минут. По истечении времени тест завершится сам.','Каждый верный ответ — 0,5 балла, максимум 10.','Пройти тест можно один раз. Переход на другие вкладки фиксируется.','Ответы после завершения не показываются — разбор будет после перерыва.'],
+       confirm:'Отвечено {n} из 20. Завершить тест?', score:'баллов из 10', correct:'Верных ответов', time:'Время', leaves:'Уходов со страницы', vr:'Вариант', st:'Студент', done:'Покажите этот экран преподавателю.', err:'Ошибка'},
+  ky: {kicker:'1-модулдун текшерүү иши · 12.11.2026', title:'JavaScript боюнча тест', name:'Фамилияңыз жана атыңыз', variant:'Вариант (окутуучу айтат)', varA:'A варианты', varB:'B варианты',
+       begin:'Тестти баштоо', finish:'Бүтүрүп, натыйжаны билүү', of:'жооп берилди', ask:'Суроо', out:'Код эмнени чыгарат?',
+       rules:['20 суроо, 30 мүнөт. Убакыт бүткөндө тест өзү аяктайт.','Ар бир туура жооп — 0,5 балл, эң көбү 10.','Тестти бир гана жолу тапшырса болот. Башка өтмөктөргө өтүү белгиленет.','Бүткөндөн кийин жооптор көрсөтүлбөйт — талдоо тыныгуудан кийин болот.'],
+       confirm:'20дан {n} суроого жооп берилди. Тестти бүтүрөсүзбү?', score:'балл 10дон', correct:'Туура жооптор', time:'Убакыт', leaves:'Барактан чыгуулар', vr:'Вариант', st:'Студент', done:'Бул экранды окутуучуга көрсөтүңүз.', err:'Ката'}
+}[LANG];
+
+/* q: question text (null = "Что выведет код?"), c: code, o: options */
+const Q = {
+A: [
+ {c:'console.log("5" + 2);', o:['7','"52"','NaN','T:err']},
+ {c:'console.log(5 === "5");', o:['true','false','undefined','T:err']},
+ {c:'const age = 17;\nif (age >= 18) {\n  console.log("A");\n} else if (age >= 16) {\n  console.log("B");\n} else {\n  console.log("C");\n}', o:['A','B','C','A B']},
+ {c:'let sum = 0;\nfor (let i = 1; i <= 4; i++) {\n  sum += i;\n}\nconsole.log(sum);', o:['4','6','10','15']},
+ {c:'let n = 0;\nwhile (true) {\n  n += 3;\n  if (n > 10) break;\n}\nconsole.log(n);', o:['9','10','12','T:err']},
+ {c:'const a = [10, 20, 30];\nconsole.log(a[a.length - 1]);', o:['10','30','undefined','3']},
+ {c:'function total(price, qty = 2) {\n  return price * qty;\n}\nconsole.log(total(500));', o:['500','1000','NaN','undefined']},
+ {c:'const double = x => {\n  x * 2;\n};\nconsole.log(double(3));', o:['6','3','undefined','T:err']},
+ {c:'const p = { name: "Кап", price: 600 };\nconst key = "price";\nconsole.log(p.key);', o:['600','"price"','undefined','T:err']},
+ {c:'const a = { n: 1 };\nconst b = a;\nb.n = 5;\nconsole.log(a.n);', o:['1','5','undefined','T:err']},
+ {c:'const { name, age = 18 } = { name: "Айбек" };\nconsole.log(age);', o:['undefined','18','"Айбек"','T:err']},
+ {c:'console.log([1, 2, 3].map(n => n * 10));', o:['[1, 2, 3]','60','[10, 20, 30]','[10]']},
+ {c:'console.log([5, 12, 8, 20].find(n => n > 10));', o:['[12, 20]','12','20','true']},
+ {c:'console.log([2, 4, 6].reduce((acc, n) => acc + n, 0));', o:['12','"246"','[2, 4, 6]','0']},
+ {c:'console.log([3, 7, 9].every(n => n > 5));', o:['true','false','[7, 9]','7']},
+ {c:'console.log([3, 20, 100].sort());', o:['[3, 20, 100]','[100, 20, 3]','[100, 3, 20]','[20, 3, 100]']},
+ {c:'console.log("  Бишкек ".trim().length);', o:['9','8','6','7']},
+ {c:'console.log("a-b-c".split("-").length);', o:['5','3','1','"abc"']},
+ {c:'console.log(typeof JSON.stringify({ a: 1 }));', o:['"object"','"string"','"number"','"json"']},
+ {q:{ru:'Какая команда сохраняет снимок изменений в истории Git?',ky:'Кайсы команда өзгөрүүлөрдүн сүрөтүн Git тарыхына сактайт?'}, o:['git add .','git push','git commit -m "…"','git init']},
+],
+B: [
+ {c:'console.log("7" - 2);', o:['5','"72"','NaN','T:err']},
+ {c:'console.log(10 === 10.0);', o:['true','false','undefined','T:err']},
+ {c:'const score = 45;\nif (score >= 90) {\n  console.log("A");\n} else if (score >= 50) {\n  console.log("B");\n} else {\n  console.log("C");\n}', o:['A','B','C','B C']},
+ {c:'let sum = 0;\nfor (let i = 1; i <= 5; i += 2) {\n  sum += i;\n}\nconsole.log(sum);', o:['15','9','5','6']},
+ {c:'let n = 0;\nwhile (true) {\n  n += 5;\n  if (n > 12) break;\n}\nconsole.log(n);', o:['10','12','15','T:err']},
+ {c:'const a = ["x", "y", "z"];\na.push("w");\nconsole.log(a.length);', o:['3','4','"w"','undefined']},
+ {c:'function total(a, b = 3) {\n  return a + b;\n}\nconsole.log(total(4, 1));', o:['7','5','4','NaN']},
+ {c:'const diff = (a, b) => a - b;\nconsole.log(diff(10, 4));', o:['undefined','14','6','-6']},
+ {c:'const p = { name: "Кап", price: 600 };\nconst key = "price";\nconsole.log(p[key]);', o:['600','"price"','undefined','T:err']},
+ {c:'const a = { n: 1 };\nconst b = { ...a };\nb.n = 5;\nconsole.log(a.n);', o:['1','5','undefined','T:err']},
+ {c:'const { price: cost } = { price: 400 };\nconsole.log(cost);', o:['undefined','"price"','400','T:err']},
+ {c:'console.log(["a", "b"].map(s => s.toUpperCase()));', o:['["a", "b"]','["A", "B"]','"AB"','undefined']},
+ {c:'console.log([5, 12, 8, 20].filter(n => n > 10));', o:['[12, 20]','12','20','true']},
+ {c:'console.log([2, 3, 4].reduce((acc, n) => acc * n, 1));', o:['9','24','"234"','1']},
+ {c:'console.log([3, 7, 9].some(n => n > 8));', o:['true','false','[9]','9']},
+ {c:'console.log([3, 20, 100].sort((a, b) => a - b));', o:['[3, 20, 100]','[100, 20, 3]','[100, 3, 20]','[20, 3, 100]']},
+ {c:'console.log("Ош".toUpperCase() + "бишкек".slice(0, 3));', o:['"ОШБИШ"','"Ошбиш"','"ОШбиш"','"ОШбишкек"']},
+ {c:'console.log(["2026", "11", "12"].join("."));', o:['"20261112"','"2026.11.12"','["2026.11.12"]','3']},
+ {c:'console.log(JSON.parse(\'{"x":[1,2]}\').x.length);', o:['2','1','undefined','T:err']},
+ {q:{ru:'Какая команда отправляет коммиты на GitHub?',ky:'Кайсы команда коммиттерди GitHub\'ка жөнөтөт?'}, o:['git commit','git push','git add .','git status']},
+]};
+/* ключ закодирован, чтобы не читался с первого взгляда */
+const KEY = {A:'Njk4ODk9PDw9ISAgIiQkJyUpKCg=', B:'Nzg7Ozk9PDw/ICMjIyUlJiUpKSs='};
+const decode = s => atob(s).split('').map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ (7 + i))).join('').split('').map(Number);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STORE = 'm1-test-result';
+const store = {get(){try{return JSON.parse(localStorage.getItem(STORE))}catch(e){return null}}, set(v){try{localStorage.setItem(STORE, JSON.stringify(v))}catch(e){}}, del(){try{localStorage.removeItem(STORE)}catch(e){}}};
+
+document.querySelectorAll('[data-t]').forEach(el => el.textContent = T[el.dataset.t]);
+document.title = T.title;
+$('#rules').innerHTML = T.rules.map(r => `<li>${esc(r)}</li>`).join('');
+if (new URLSearchParams(location.search).get('reset') === '1207') store.del();
+
+let variant, name, startedAt, leaves = 0, tick, finished = false;
+
+const check = () => $('#begin').disabled = !($('#nm').value.trim().length >= 3 && document.querySelector('input[name=v]:checked'));
+$('#nm').addEventListener('input', check);
+document.querySelectorAll('input[name=v]').forEach(r => r.addEventListener('change', check));
+
+const showResult = r => {
+  $('#start').classList.add('hide'); $('#test').classList.add('hide');
+  const box = $('#result'); box.classList.remove('hide');
+  const mm = Math.floor(r.sec / 60), ss = String(r.sec % 60).padStart(2, '0');
+  box.innerHTML = `<div class="k" style="font:600 12px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--accent)">${esc(T.kicker)}</div>
+    <div class="sc">${String(r.points).replace('.', ',')}<small> / 10</small></div><div style="color:var(--muted)">${esc(T.score)}</div>
+    <table>
+      <tr><td>${esc(T.st)}</td><td><b>${esc(r.name)}</b></td></tr>
+      <tr><td>${esc(T.vr)}</td><td>${esc(r.variant)}</td></tr>
+      <tr><td>${esc(T.correct)}</td><td>${r.correct} / 20</td></tr>
+      <tr><td>${esc(T.time)}</td><td>${mm}:${ss}</td></tr>
+      <tr><td>${esc(T.leaves)}</td><td class="${r.leaves ? 'warn' : ''}">${r.leaves}</td></tr>
+      <tr><td></td><td style="color:var(--muted);font-size:14px">${esc(r.at)}</td></tr>
+    </table>
+    <p style="margin-top:24px;color:var(--muted)">${esc(T.done)}</p>`;
+};
+
+const finish = () => {
+  if (finished) return; finished = true;
+  clearInterval(tick);
+  const key = decode(KEY[variant]);
+  let correct = 0;
+  Q[variant].forEach((q, i) => {
+    const c = document.querySelector(`input[name=q${i}]:checked`);
+    if (c && +c.value === key[i]) correct++;
+  });
+  const r = {name, variant, correct, points: correct / 2, sec: Math.round((Date.now() - startedAt) / 1000), leaves,
+             at: new Date().toLocaleString(LANG === 'ky' ? 'ky-KG' : 'ru-RU')};
+  store.set(r);
+  showResult(r);
+};
+
+$('#begin').onclick = () => {
+  name = $('#nm').value.trim();
+  variant = document.querySelector('input[name=v]:checked').value;
+  $('#start').classList.add('hide'); $('#test').classList.remove('hide');
+  $('#who').textContent = `${name} · ${variant}`;
+  $('#qs').innerHTML = Q[variant].map((q, i) => {
+    const text = q.q ? q.q[LANG] : T.out;
+    return `<div class="card q"><div class="n">${esc(T.ask)} ${i + 1} / 20</div><div class="tx">${esc(text)}</div>
+      ${q.c ? `<pre>${esc(q.c)}</pre>` : ''}
+      <div class="opts">${q.o.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}"><span>${esc(o === 'T:err' ? T.err : o)}</span></label>`).join('')}</div></div>`;
+  }).join('');
+  const prog = () => $('#prog').textContent = `${document.querySelectorAll('#qs input:checked').length} / 20 ${T.of}`;
+  $('#qs').addEventListener('change', prog); prog();
+  startedAt = Date.now();
+  const end = startedAt + MINUTES * 60000;
+  const upd = () => {
+    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    $('#timer').textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    $('#timer').classList.toggle('low', left <= 300);
+    if (left === 0) finish();
+  };
+  upd(); tick = setInterval(upd, 1000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !finished) leaves++; });
+  window.addEventListener('beforeunload', e => { if (!finished) { e.preventDefault(); e.returnValue = ''; } });
+  window.scrollTo(0, 0);
+};
+
+$('#finish').onclick = () => {
+  const n = document.querySelectorAll('#qs input:checked').length;
+  if (confirm(T.confirm.replace('{n}', n))) finish();
+};
+
+const saved = store.get();
+if (saved) showResult(saved);
+</script>
+</body>
+</html>
