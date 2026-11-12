@@ -71,15 +71,17 @@ button.go:disabled{opacity:.4;cursor:default}
 <script>
 const LANG = document.documentElement.lang.startsWith('ky') ? 'ky' : 'ru';
 const MINUTES = 30;
+/* адрес веб-приложения Google Apps Script (таблица преподавателя); пусто — результаты не отправляются */
+const RESULTS_URL = 'https://script.google.com/macros/s/AKfycbz9vB4qykS3S6SUj_qlvu6dI5J-w4GMJGhT4bdkoKRxX-XeA2RKZqaYmX39FDgkb0xmzw/exec';
 const T = {
   ru: {kicker:'Контрольная модуля 1 · 12.11.2026', title:'Тест по JavaScript', name:'Фамилия и имя', variant:'Вариант (скажет преподаватель)', varA:'Вариант A', varB:'Вариант B',
        begin:'Начать тест', finish:'Завершить и узнать результат', of:'отвечено', ask:'Вопрос', out:'Что выведет код?',
        rules:['20 вопросов, 30 минут. По истечении времени тест завершится сам.','Каждый верный ответ — 0,5 балла, максимум 10.','Пройти тест можно один раз. Переход на другие вкладки фиксируется.','Ответы после завершения не показываются — разбор будет после перерыва.'],
-       confirm:'Отвечено {n} из 20. Завершить тест?', score:'баллов из 10', correct:'Верных ответов', time:'Время', leaves:'Уходов со страницы', vr:'Вариант', st:'Студент', done:'Покажите этот экран преподавателю.', err:'Ошибка'},
+       confirm:'Отвечено {n} из 20. Завершить тест?', score:'баллов из 10', correct:'Верных ответов', time:'Время', leaves:'Уходов со страницы', vr:'Вариант', st:'Студент', done:'Покажите этот экран преподавателю.', err:'Ошибка', sent:'Результат отправлен преподавателю.', sending:'Отправляем результат…', fail:'Нет интернета — результат отправится, когда связь появится. Не закрывайте страницу.'},
   ky: {kicker:'1-модулдун текшерүү иши · 12.11.2026', title:'JavaScript боюнча тест', name:'Фамилияңыз жана атыңыз', variant:'Вариант (окутуучу айтат)', varA:'A варианты', varB:'B варианты',
        begin:'Тестти баштоо', finish:'Бүтүрүп, натыйжаны билүү', of:'жооп берилди', ask:'Суроо', out:'Код эмнени чыгарат?',
        rules:['20 суроо, 30 мүнөт. Убакыт бүткөндө тест өзү аяктайт.','Ар бир туура жооп — 0,5 балл, эң көбү 10.','Тестти бир гана жолу тапшырса болот. Башка өтмөктөргө өтүү белгиленет.','Бүткөндөн кийин жооптор көрсөтүлбөйт — талдоо тыныгуудан кийин болот.'],
-       confirm:'20дан {n} суроого жооп берилди. Тестти бүтүрөсүзбү?', score:'балл 10дон', correct:'Туура жооптор', time:'Убакыт', leaves:'Барактан чыгуулар', vr:'Вариант', st:'Студент', done:'Бул экранды окутуучуга көрсөтүңүз.', err:'Ката'}
+       confirm:'20дан {n} суроого жооп берилди. Тестти бүтүрөсүзбү?', score:'балл 10дон', correct:'Туура жооптор', time:'Убакыт', leaves:'Барактан чыгуулар', vr:'Вариант', st:'Студент', done:'Бул экранды окутуучуга көрсөтүңүз.', err:'Ката', sent:'Натыйжа окутуучуга жөнөтүлдү.', sending:'Натыйжа жөнөтүлүүдө…', fail:'Интернет жок — байланыш пайда болгондо натыйжа жөнөтүлөт. Баракты жаппаңыз.'}
 }[LANG];
 
 /* q: question text (null = "Что выведет код?"), c: code, o: options */
@@ -162,7 +164,19 @@ const showResult = r => {
       <tr><td>${esc(T.leaves)}</td><td class="${r.leaves ? 'warn' : ''}">${r.leaves}</td></tr>
       <tr><td></td><td style="color:var(--muted);font-size:14px">${esc(r.at)}</td></tr>
     </table>
-    <p style="margin-top:24px;color:var(--muted)">${esc(T.done)}</p>`;
+    <p style="margin-top:24px;color:var(--muted)">${esc(T.done)}</p>
+    <p id="send" style="color:var(--muted);font-size:14px"></p>`;
+  if (RESULTS_URL.startsWith('https://')) send(r);
+};
+
+const send = r => {
+  if (r.sentOk) { $('#send').textContent = T.sent; return; }
+  $('#send').textContent = T.sending;
+  const body = JSON.stringify({name: r.name, variant: r.variant, points: r.points, correct: r.correct, sec: r.sec, leaves: r.leaves,
+                               lang: LANG, marks: r.marks, picks: r.picks, at: r.at});
+  fetch(RESULTS_URL, {method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body})
+    .then(() => { r.sentOk = true; store.set(r); $('#send').textContent = T.sent; })
+    .catch(() => { $('#send').textContent = T.fail; setTimeout(() => send(r), 10000); });
 };
 
 const finish = () => {
@@ -170,11 +184,15 @@ const finish = () => {
   clearInterval(tick);
   const key = decode(KEY[variant]);
   let correct = 0;
+  const marks = [], picks = [];
   Q[variant].forEach((q, i) => {
     const c = document.querySelector(`input[name=q${i}]:checked`);
-    if (c && +c.value === key[i]) correct++;
+    const ok = c && +c.value === key[i];
+    if (ok) correct++;
+    marks.push(ok ? 1 : 0);
+    picks.push(c ? 'ABCD'[+c.value] : '-');
   });
-  const r = {name, variant, correct, points: correct / 2, sec: Math.round((Date.now() - startedAt) / 1000), leaves,
+  const r = {name, variant, correct, marks, picks: picks.join(''), points: correct / 2, sec: Math.round((Date.now() - startedAt) / 1000), leaves,
              at: new Date().toLocaleString(LANG === 'ky' ? 'ky-KG' : 'ru-RU')};
   store.set(r);
   showResult(r);
